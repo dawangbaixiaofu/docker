@@ -1,0 +1,200 @@
+DevOps 开发运维
+Docker的三大要素：镜像、容器、仓库
+java的三大特征：封装、继承、多态
+Docker Hub
+
+Docker的架构图
+镜像和容器的关系：
+一个镜像可以创建多个容器。类似于类和实例之间的关系
+仓库保存镜像
+国内公开的仓库：阿里云和网易云
+
+
+Docker命令
+docker version --version
+docker info --容器信息的描述
+输出常用的命令
+docker --help  
+daemon 守护进程
+
+Docker镜像命令：
+	docker images 列出本地的镜像
+		REPOSITORY 镜像名称
+		TAG 镜像标签
+		IMAGE_ID
+		CREATED
+		VIRTUAL_SIZE
+	docker images -a 
+	列出镜像的详细层，镜像是由各层组成的
+	docker images -q 列出当前镜像ID
+	docker images -qa 列出当前镜像各层ID
+	docker images --digest 多了一个摘要信息说明
+
+	docker search 某个镜像的名字
+	例子:docker search tomcat 
+	NAME DESCRIPTION STARS OFFICIAL AUTOMATED
+	tomcat ...       1923   [OK]
+
+	docker pull 下载某个镜像的名字:版本号
+	等价于
+	docker pull tomcat:lastest(也可以是版本号)
+
+	docker rmi 某个镜像名称:版本号 删除镜像
+	docker rmo -f $(docker images -qa)
+	删除当前正在运行的镜像
+
+Docker容器的相关命令：
+	新建并启动容器
+	docker run -it -p 主机端口:docker容器端口 镜像名字/ID
+	i交互
+	t启动一个终端
+	p端口映射
+	--name 为容器起名字
+
+
+	docker ps		
+	CONTAINER ID IMAGE	COMMAND		CREATED STATUS PORTS NAMES
+
+	退出容器
+	exit
+
+	ctrl+p+q 离开当前容器
+
+	启动容器
+	docker start 容器ID或者容器名称
+
+	docker restart 重启一个容器
+	docker stop 停止一个容器
+	docker kill 强制停止一个容器
+
+	守护式进程启动容器，如果容器无任务自动kill
+	docker run -d 容器ID
+	docker logs -f -t --tail 容器ID
+	-t 加入时间戳
+	-f 不停的追加最新生成的日志
+
+	查看容器内运行的进程
+	docker top 容器ID/容器名称
+	查看容器内部的细节
+	docker inspect 容器ID
+
+	重新进入正在运行的容器并以命令行交互
+	docker attach 容器ID
+	docker exec -t 容器ID command
+
+	从容器产生的文件拷贝到宿主机
+	docker cp 容器ID：容器内部路径 宿主机路径
+	
+	把容器提交生成本地镜像
+	docker commit -a='' -m='' 容器ID/名称 new_name:flag
+
+
+docker镜像
+	包括运行的环境和运用打包而成，所以Tomcat要比centos的镜像要大。
+
+docker容器数据卷
+
+	将容器内，内存中的数据进行持久化+共享数据
+	类似于redis中的rdb和aof文件
+	也可以实现容器到宿主机文件copy，和从主机到容器的文件copy
+
+	命令的方式建立容器数据卷
+	docker run -it -v /宿主机绝对路径目录:/容器内目录 镜像名
+
+	查看数据是否挂载成功
+	docker inspect 容器ID 
+	 查看 Volumes
+
+	使用dockfile添加容器数据卷
+	编写dockerfile命令-->build-->新镜像
+	docker build -f dockerfile路径 -t 新的镜像名称 镜像存放地址
+	把dockerfile build成一个镜像
+
+	容器的继承和共享数据卷
+
+dockerfile
+是docker镜像的构建文件
+wirte a dockerfile-->build a dockerfile-->run-->container
+
+
+FROM scratch [根镜像]
+MAINTAINER author <email>
+ADD
+LABEL
+
+
+#default command
+CMD []
+
+保留字指令必须大写；
+大写字母后面至少有一个参数；
+指令按照从上到下顺序执行；
+#是注释符号
+每条指令都会创建一个镜像层，并对镜像进行提交
+
+dockerfile解析过程
+	dockerfile从基础镜像运行一个容器；
+	执行一条指令并对容器做出修改；
+	执行类似dockercommit的操作提交一个新的镜像层；
+	docker再基于刚提交的镜像运行一个新容器；
+	执行docker中的下一条指令直到所有指令都执行完成；
+
+	dockerfile面向开发，docker镜像称为交付标准，docker容器
+	则涉及到部署和运维。
+
+dockerfile保留字指令
+	FROM
+	MAINTAINTER
+	RUN
+	EXPOSE
+	WORKDIR
+	ENV
+	ADD
+	COPY
+	VOLUMN
+
+	CMD
+	ENTRYPOINT
+	ONBUILD
+
+	#创建一个镜像，是带vim和ifconfig的Linux系统
+	case1:
+	FROM centos
+	ENV mypath /tmp
+	WORKDIR $mypath
+	RUN yum -y install vim
+	RUN yum -y install net-tools
+
+	EXPOSE 80
+	CMD /bin/bash
+
+	查询IP地址镜像
+	case2：
+	FROM centos
+	RUN yum install -y curl
+	CMD ["curl","-s","http://ip.cn"]
+
+case3:
+dockerfile1中的内容：
+FROM centos
+RUN yum -y install curl
+ENTRYPOINT curl -s http://ip.cn
+ONBULID RUN echo "father image bulid..."
+
+build这个dockerfile1为镜像fatherCentos
+dockerfile2中的内容：
+FROM fatherCentos
+CMD curl -s curl -s http://ip.cn
+
+在build这个dockerfile2的时候，中间会打印出dockerfile1中的
+ONBUILD 后面的command
+
+
+安装MySQL
+docker run -p 3306:3306
+--name mysql
+-v 
+-e MYSQL_ROOT_PASSWORD=123456 初始化root用户的密码
+-d mysql:5.6
+
+安装Redis
